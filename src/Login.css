@@ -1,0 +1,96 @@
+* {
+  box-sizing: border-box;
+  font-family: sans-serif;
+}
+
+/* BACKGROUND */
+.login-page {
+  height: 100vh;
+  background: #dcdcdc;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* CARD */
+.login-card {
+  display: flex;
+  width: 800px;
+  height: 400px;
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(5px);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+/* IMAGE */
+.login-image {
+  width: 50%;
+  height: 100%;
+  overflow: hidden; 
+}
+.login-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: left center; 
+}
+/* FORM */
+.login-form {
+  width: 50%;
+  padding: 30px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.login-form label {
+  font-size: 12px;
+  margin-top: 10px;
+  margin-bottom: 5px;
+}
+
+.login-form input {
+  height: 35px;
+  border: none;
+  border-radius: 8px;
+  background: #bfbfbf;
+  padding: 0 10px;
+  margin-bottom: 10px;
+}
+
+/* BUTTON */
+.btn-group {
+  display: flex;
+  gap: 20px;
+  margin-top: 10px;
+}
+
+.btn-group button {
+  padding: 8px 20px;
+  border: none;
+  border-radius: 8px;
+  background: #bfbfbf;
+  cursor: pointer;
+}
+/* BUTTON DEFAULT */
+.btn-group button {
+  padding: 8px 20px;
+  border: none;
+  border-radius: 8px;
+  background: #bfbfbf;
+  cursor: pointer;
+
+  transition: all 0.3s ease; /* 🔥 smooth */
+}
+
+/* HOVER EFFECT */
+.btn-group button:hover {
+  background: #333;          /* jadi gelap */
+  color: white;              /* teks putih */
+  transform: scale(1.1);     /* sedikit membesar */
+  box-shadow: 0 8px 20px rgba(0,0,0,0.3); /* glow */
+}
+.login-form input {
+  margin-bottom: 12px;
+}
