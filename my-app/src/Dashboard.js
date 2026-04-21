@@ -1,8 +1,10 @@
 import "./Dashboard.css";
 import { Bar } from "react-chartjs-2";
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { useLocation } from "react-router-dom"; // 🔥 TAMBAH INI
+import { useNavigate, Routes, Route, useLocation } from "react-router-dom";
+
+import Pembayaran from "./Pembayaran";
+import Doctor from "./Dokter";
 
 import {
   Chart as ChartJS,
@@ -24,57 +26,67 @@ import {
 ChartJS.register(CategoryScale, LinearScale, BarElement);
 
 function Dashboard() {
-  const [p1, setP1] = useState(0);
-  const [p2, setP2] = useState(0);
+  const [dark, setDark] = useState(false);
+  const [janji, setJanji] = useState([]);
+
+  const navigate = useNavigate();
   const location = useLocation();
-  const [dark, setDark] = useState(() => {
-  return localStorage.getItem("dark") === "true";
-});
-useEffect(() => {
-  if (dark) {
-    document.body.classList.add("dark");
-  } else {
-    document.body.classList.remove("dark");
-  }
 
-  localStorage.setItem("dark", dark);
-}, [dark]);
-
-  const navigate = useNavigate(); // 🔥 TAMBAH INI
-
-  // 🔥 ANIMASI PERSEN
+  // LOAD DATA
   useEffect(() => {
-    const duration = 800;
-    const start = performance.now();
-
-    const animate = (time) => {
-      const progress = Math.min((time - start) / duration, 1);
-
-      setP1(Math.floor(progress * 72));
-      setP2(Math.floor(progress * 54));
-
-      if (progress < 1) {
-        requestAnimationFrame(animate);
-      }
+    const loadData = () => {
+      const data = JSON.parse(localStorage.getItem("janji")) || [];
+      setJanji(data);
     };
 
-    requestAnimationFrame(animate);
-  }, []);
-  
-  useEffect(() => {
-  if (dark) {
-    document.body.classList.add("dark");
-  } else {
-    document.body.classList.remove("dark");
-  }
-}, [dark]);
+    loadData();
+    window.addEventListener("storage", loadData);
 
-  // DATA CHART
-  const data = {
-    labels: ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Minggu"],
+    return () => window.removeEventListener("storage", loadData);
+  }, []);
+
+  // UPDATE STATUS
+  const updateStatus = (index) => {
+    const updated = [...janji];
+
+    updated[index].status =
+      updated[index].status === "Proses" ? "Selesai" : "Proses";
+
+    setJanji(updated);
+    localStorage.setItem("janji", JSON.stringify(updated));
+  };
+
+  // HITUNG STATUS
+  const selesai = janji.filter(j => j.status === "Selesai").length;
+  const proses = janji.filter(j => j.status === "Proses").length;
+  const total = janji.length || 1;
+
+  const persenSelesai = Math.round((selesai / total) * 100);
+  const persenProses = Math.round((proses / total) * 100);
+
+  // SUMMARY PER DOKTER
+  const dokterSummary = Object.entries(
+    janji.reduce((acc, curr) => {
+      acc[curr.dokter] = (acc[curr.dokter] || 0) + 1;
+      return acc;
+    }, {})
+  ).sort((a, b) => b[1] - a[1]);
+
+  // CHART PER HARI
+  const hariMap = ["Minggu","Senin","Selasa","Rabu","Kamis","Jumat","Sabtu"];
+  const harianChart = [0,0,0,0,0,0,0];
+
+  janji.forEach((item) => {
+    const date = new Date(item.waktu);
+    const hari = date.getDay();
+    harianChart[hari]++;
+  });
+
+  const dataChart = {
+    labels: hariMap,
     datasets: [
       {
-        data: [20, 60, 65, 15, 80, 45, 50],
+        data: harianChart,
         backgroundColor: "#7b61ff",
         borderRadius: 8,
       },
@@ -83,147 +95,209 @@ useEffect(() => {
 
   const options = {
     maintainAspectRatio: false,
-    plugins: {
-      legend: { display: false },
+    plugins: { legend: { display: false } },
+    scales: {
+      y: {
+        beginAtZero: true,
+        ticks: { stepSize: 1 },
+      },
     },
   };
+
+  // 🔥 HITUNG PENDING (buat badge)
+  const pendingCount = janji.filter(j => j.status === "Pending").length;
 
   return (
     <div className={dark ? "dashboard dark" : "dashboard"}>
 
       {/* SIDEBAR */}
-<div className="sidebar">
+      <div className="sidebar">
 
-  <div className="menu-list">
+        <div
+          className={`menu ${location.pathname === "/dashboard" ? "active" : ""}`}
+          onClick={() => navigate("/dashboard")}
+        >
+          <FaHome /> Dashboard
+        </div>
 
-  <div
-    className={`menu ${location.pathname === "/dashboard" ? "active" : ""}`}
-    onClick={() => navigate("/dashboard")}
-  >
-    <FaHome /> Dashboard
-  </div>
+        <div
+          className={`menu ${location.pathname === "/dashboard/dokter" ? "active" : ""}`}
+          onClick={() => navigate("/dashboard/dokter")}
+        >
+          <FaUserMd /> Dokter
+        </div>
 
-  <div
-    className={`menu ${location.pathname === "/dokter" ? "active" : ""}`}
-    onClick={() => navigate("/dokter")}
-  >
-    <FaUserMd /> Dokter
-  </div>
+        <div className="menu">
+          <FaCalendar /> Jadwal
+        </div>
 
-  <div className="menu">
-    <FaCalendar /> Jadwal
-  </div>
+        {/* 🔥 PEMBAYARAN (SUDAH NYAMBUNG) */}
+        <div
+          className={`menu ${location.pathname === "/dashboard/pembayaran" ? "active" : ""}`}
+          onClick={() => navigate("/dashboard/pembayaran")}
+        >
+          <FaMoneyBill /> Pembayaran
+          {pendingCount > 0 && (
+            <span className="badge">{pendingCount}</span>
+          )}
+        </div>
 
-  <div className="menu">
-    <FaMoneyBill /> Pembayaran
-  </div>
+        <div className="menu">
+          <FaCog /> Setting
+        </div>
 
-  <div className="menu">
-    <FaCog /> Setting
-  </div>
+        <div className="profile">
+          <div className="avatar">A</div>
+          <p>ANIESHG</p>
+        </div>
 
-</div>
-  {/* PROFILE */}
-  <div className="profile">
-    <div className="avatar">A</div>
-    <p>ANIESHG</p>
-  </div>
+      </div>
 
-</div>
       {/* MAIN */}
       <div className="main">
 
-        {/* TOP BAR */}
+        {/* TOPBAR */}
         <div className="topbar">
-
           <div className="search-box">
             <span>🔍</span>
             <input type="text" placeholder="Search..." />
           </div>
 
           <button
-            className={`dark-toggle ${dark ? "active" : ""}`}
+            className="dark-toggle"
             onClick={() => setDark(!dark)}
           >
             {dark ? <FaSun /> : <FaMoon />}
           </button>
-
         </div>
 
-        {/* CONTENT */}
-        <div className="content-top">
+        <Routes>
 
-          <div className="chart-box fade-in">
-            <Bar data={data} options={options} />
-          </div>
+          {/* DASHBOARD */}
+          <Route
+            index
+            element={
+              <>
+                <div className="content-top">
 
-          <div className="side-cards">
+                  <div className="chart-box">
+                    <Bar data={dataChart} options={options} />
+                  </div>
 
-            <div className="info-card">
-              <h3>JANJI TEMU SELESAI</h3>
-              <div
-                className="circle"
-                style={{
-                  background: `conic-gradient(#7b61ff ${p1}%, #eee ${p1}%)`,
-                }}
-              >
-                {p1}%
-              </div>
-            </div>
+                  <div className="side-cards">
 
-            <div className="info-card">
-              <h3>JANJI TEMU MENDESAK</h3>
-              <div
-                className="circle"
-                style={{
-                  background: `conic-gradient(#4facfe ${p2}%, #eee ${p2}%)`,
-                }}
-              >
-                {p2}%
-              </div>
-            </div>
+                    <div className="info-card">
+                      <h3>JANJI SELESAI</h3>
+                      <div
+                        className="circle"
+                        style={{
+                          background: `conic-gradient(#7b61ff ${persenSelesai}%, #eee ${persenSelesai}%)`,
+                        }}
+                      >
+                        {persenSelesai}%
+                      </div>
+                    </div>
 
-          </div>
-        </div>
+                    <div className="info-card">
+                      <h3>JANJI PROSES</h3>
+                      <div
+                        className="circle"
+                        style={{
+                          background: `conic-gradient(#4facfe ${persenProses}%, #eee ${persenProses}%)`,
+                        }}
+                      >
+                        {persenProses}%
+                      </div>
+                    </div>
 
-        {/* TABLE */}
-        <div className="table fade-in">
-          <h3>JANJI TEMU MENDATANG</h3>
+                  </div>
+                </div>
 
-          <table>
-            <thead>
-              <tr>
-                <th>WAKTU</th>
-                <th>NAMA</th>
-                <th>TELEPON</th>
-                <th>DOKTER</th>
-                <th>STATUS</th>
-              </tr>
-            </thead>
+                {/* RINGKASAN DOKTER */}
+                <div className="table">
+                  <h3>RINGKASAN DOKTER</h3>
+                  <h4>Total Permintaan: {janji.length}</h4>
 
-            <tbody>
-              <tr>
-                <td>09:00</td>
-                <td>ANDI</td>
-                <td>08123</td>
-                <td>DR A</td>
-                <td>
-                  <span className="status selesai">Selesai</span>
-                </td>
-              </tr>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>DOKTER</th>
+                        <th>JUMLAH PASIEN</th>
+                      </tr>
+                    </thead>
 
-              <tr>
-                <td>10:00</td>
-                <td>BUDI</td>
-                <td>08234</td>
-                <td>DR B</td>
-                <td>
-                  <span className="status proses">Proses</span>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+                    <tbody>
+                      {dokterSummary.length > 0 ? (
+                        dokterSummary.map(([dokter, total], i) => (
+                          <tr key={i}>
+                            <td>{dokter}</td>
+                            <td>{total}</td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan="2" style={{ textAlign: "center" }}>
+                            Belum ada data
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* DETAIL */}
+                <div className="table">
+                  <h3>DETAIL JANJI</h3>
+
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>WAKTU</th>
+                        <th>NAMA</th>
+                        <th>DOKTER</th>
+                        <th>STATUS</th>
+                      </tr>
+                    </thead>
+
+                    <tbody>
+                      {janji.length > 0 ? (
+                        janji.map((item, i) => (
+                          <tr key={i}>
+                            <td>{item.waktu}</td>
+                            <td>{item.nama}</td>
+                            <td>{item.dokter}</td>
+                            <td>
+                              <span
+                                className={`status ${item.status.toLowerCase()}`}
+                                onClick={() => updateStatus(i)}
+                                style={{ cursor: "pointer" }}
+                              >
+                                {item.status}
+                              </span>
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan="4" style={{ textAlign: "center" }}>
+                            Belum ada janji
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            }
+          />
+
+          {/* DOKTER */}
+          <Route path="dokter" element={<Doctor />} />
+
+          {/* 🔥 PEMBAYARAN */}
+          <Route path="pembayaran" element={<Pembayaran />} />
+
+        </Routes>
 
       </div>
     </div>

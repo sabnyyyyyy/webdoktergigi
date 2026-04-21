@@ -1,8 +1,6 @@
-import { useEffect } from "react";
-import "./Dashboard.css";
-import "./Dokter.css";
 import { useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom"; // 🔥 TAMBAH INI
+import "./Dokter.css";
 
 import d1 from "./dokter1.png";
 import d2 from "./dokter2.png";
@@ -11,115 +9,159 @@ import d4 from "./dokter4.png";
 import d5 from "./dokter5.png";
 import d6 from "./dokter6.png";
 
-import {
-  FaHome,
-  FaUserMd,
-  FaCalendar,
-  FaMoneyBill,
-  FaCog,
-} from "react-icons/fa";
+const doctors = [
+  { name: "DR. TIRTA", img: d1 },
+  { name: "DR. GIGI HADID", img: d2 },
+  { name: "DR. ANWAR KOPLO", img: d3 },
+  { name: "DR. BILLIE NGAWI", img: d4 },
+  { name: "DR. WINDAH B.", img: d5 },
+  { name: "DR. JENNY B.", img: d6 },
+];
 
 function Dokter() {
-  const [search, setSearch] = useState("");
-  const navigate = useNavigate();
-  const location = useLocation();
-  useEffect(() => {
-  const saved = localStorage.getItem("dark");
+  const [selectedDoctor, setSelectedDoctor] = useState(null);
+  const [tanggal, setTanggal] = useState("");
+  const [keluhan, setKeluhan] = useState("");
+  const [toast, setToast] = useState({ message: "", type: "" });
+  const [loading, setLoading] = useState(false);
+  const [showPayOption, setShowPayOption] = useState(false); // 🔥 NEW
 
-  if (saved === "true") {
-    document.body.classList.add("dark");
-  } else {
-    document.body.classList.remove("dark");
-  }
-}, []);
+  const navigate = useNavigate(); // 🔥 NEW
 
-  // 🔥 DATA SUDAH FIX (PAKAI IMPORT)
-  const doctors = [
-    { name: "DR. TIRTA", img: d1 },
-    { name: "DR. GIGI HADID", img: d2 },
-    { name: "DR. ANWAR KOPLO", img: d3 },
-    { name: "DR. BILLIE NGAWI", img: d4 },
-    { name: "DR. WINDAH B.", img: d5 },
-    { name: "DR. JENNY B.", img: d6 },
-  ];
+  const resetForm = () => {
+    setSelectedDoctor(null);
+    setTanggal("");
+    setKeluhan("");
+  };
 
-  const filteredDoctors = doctors.filter((doc) =>
-    doc.name.toLowerCase().includes(search.toLowerCase())
-  );
+  const handleBooking = () => {
+    if (!tanggal || !keluhan) {
+      setToast({ message: "Isi tanggal & keluhan dulu!", type: "error" });
+
+      setTimeout(() => {
+        setToast({ message: "", type: "" });
+      }, 3000);
+
+      return;
+    }
+
+    setLoading(true);
+
+    setTimeout(() => {
+      const newJanji = {
+        waktu: tanggal,
+        nama: JSON.parse(localStorage.getItem("user"))?.name || "User",
+        telepon: "08xxxx",
+        dokter: selectedDoctor,
+        status: "Pending", // 🔥 FIX FLOW
+      };
+
+      const existing = JSON.parse(localStorage.getItem("janji")) || [];
+      localStorage.setItem("janji", JSON.stringify([...existing, newJanji]));
+
+      setToast({ message: "Janji berhasil dibuat!", type: "success" });
+
+      setShowPayOption(true); // 🔥 munculin pilihan bayar
+
+      resetForm();
+      setLoading(false);
+    }, 1000);
+  };
 
   return (
-    <div className="dashboard">
+    <div className="dokter-container">
 
-      {/* SIDEBAR */}
-      <div className="sidebar">
+      {/* GRID */}
+      <div className="dokter-grid">
+        {doctors.map((doc, i) => (
+          <div className="dokter-card" key={i}>
+            <img src={doc.img} alt={doc.name} />
+            <p>{doc.name}</p>
 
-        <div className="menu-list">
-
-          <div
-            className={`menu ${location.pathname === "/dashboard" ? "active" : ""}`}
-            onClick={() => navigate("/dashboard")}
-          >
-            <FaHome /> Dashboard
+            <button onClick={() => setSelectedDoctor(doc.name)}>
+              Buat Janji
+            </button>
           </div>
-
-          <div
-            className={`menu ${location.pathname === "/dokter" ? "active" : ""}`}
-            onClick={() => navigate("/dokter")}
-          >
-            <FaUserMd /> Dokter
-          </div>
-
-          <div className="menu">
-            <FaCalendar /> Jadwal
-          </div>
-
-          <div className="menu">
-            <FaMoneyBill /> Pembayaran
-          </div>
-
-          <div className="menu">
-            <FaCog /> Setting
-          </div>
-
-        </div>
-
-        <div className="profile">
-          <div className="avatar">A</div>
-          <p>ANIESHG</p>
-        </div>
-
+        ))}
       </div>
 
-      {/* MAIN */}
-      <div className="main">
+      {/* MODAL */}
+      {selectedDoctor && (
+        <div className="modal" onClick={() => !loading && resetForm()}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
 
-        {/* TOPBAR */}
-        <div className="topbar">
-          <div className="search-box">
-            🔍
+            <h3>{selectedDoctor}</h3>
+
+            <label>Tanggal Janji</label>
             <input
-              placeholder="Search dokter..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              type="date"
+              value={tanggal}
+              onChange={(e) => setTanggal(e.target.value)}
             />
+
+            <label>Keluhan</label>
+            <textarea
+              placeholder="Contoh: sakit kepala..."
+              value={keluhan}
+              onChange={(e) => setKeluhan(e.target.value)}
+            />
+
+            <button
+              className="btn-primary"
+              onClick={handleBooking}
+              disabled={loading || !tanggal || !keluhan}
+            >
+              {loading ? <div className="spinner"></div> : "Simpan"}
+            </button>
+
+            <button
+              className="btn-secondary"
+              onClick={resetForm}
+              disabled={loading}
+            >
+              Batal
+            </button>
+
           </div>
         </div>
+      )}
 
-        {/* GRID */}
-        <div className="dokter-grid">
-          {filteredDoctors.length > 0 ? (
-            filteredDoctors.map((doc, i) => (
-              <div className="dokter-card" key={i}>
-                <img src={doc.img} alt={doc.name} />
-                <p>{doc.name}</p>
-              </div>
-            ))
-          ) : (
-            <p className="no-data">Dokter tidak ditemukan</p>
-          )}
+      {/* TOAST */}
+      {toast.message && (
+        <div className={`toast ${toast.type}`}>
+          <span className="toast-icon">
+            {toast.type === "success" ? "✔️" : "❌"}
+          </span>
+          <span>{toast.message}</span>
         </div>
+      )}
 
-      </div>
+      {/* 🔥 PILIHAN BAYAR */}
+      {showPayOption && (
+        <div className="modal">
+          <div className="modal-content">
+
+            <h3>Janji Berhasil 🎉</h3>
+            <p>Lanjut ke pembayaran sekarang?</p>
+
+            <button
+              className="btn-primary"
+              onClick={() => navigate("/dashboard/pembayaran")}
+            >
+              Bayar Sekarang
+            </button>
+
+            <button
+              className="btn-secondary"
+              onClick={() => setShowPayOption(false)}
+            >
+              Nanti
+            </button>
+
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

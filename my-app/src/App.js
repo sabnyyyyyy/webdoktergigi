@@ -1,31 +1,25 @@
-import React from "react";
 import "./App.css";
-import hero from "./gambardepan.jpg";
+import bg from "./gambardepan.jpg";
 import { useNavigate } from "react-router-dom";
 
-function App() {
+function Home() {
   const navigate = useNavigate();
-
   return (
-    <div className="container">
-      <div
-        className="hero"
-        style={{ backgroundImage: `url(${hero})` }}
-      >
-        <div className="nav-center">
-          <span onClick={() => navigate("/login")}>LOGIN</span>
-          <span onClick={() => navigate("/register")}>REGISTRASI</span>
-          <span onClick={() => navigate("/about")}>ABOUT US</span>
-        </div>
+    <div className="home">
 
-        <div className="overlay-box">
-          <h1>MEET OUR DENTIST</h1>
-        </div>
+      <img src={bg} alt="dentist" className="bg" />
 
-        <div className="bottom-box"></div>
+      <div className="overlay">
+        <h1>MEET OUR DENTIST</h1>
+        <p>Pelayanan terbaik untuk kesehatan gigi Anda 🦷</p>
+
+        <button onClick={() => navigate("/register")}>
+          Get Started
+        </button>
       </div>
+
     </div>
   );
 }
 
-export default App;
+export default Home;
